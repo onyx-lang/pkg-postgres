@@ -127,13 +127,15 @@ Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
     defer delete(^values);
 
     for params.length {
-        w, buf := io.string_builder();
-        defer delete(^buf);
-
+        // The data from this buffer will be freed in the defered
+        // block above, since the data element is copied and stored
+        // in the constructed_values array.
+        buf := io.buffer_stream_make(64);
+        w := io.writer_make(^buf);
         io.write_format_va(^w, "{}", .[ params[it] ]);
 
-        constructed_values[it] = io.buffer_stream_to_str(buf);
-        values[it] = cptr.make(buf.data.data);
+        constructed_values[it] = io.buffer_stream_to_str(^buf);
+        values[it] = cptr.make(constructed_values[it].data);
     }
 
     return Result.{

@@ -27,6 +27,10 @@ cptru8_to_str :: (s: cptr(u8), a: Allocator) -> str {
     return buf;
 }
 
+// This returns a volatile string
+// that should not be returned by any function.
+// It is only valid so long as the callers frame
+// is valid.
 str_to_cstr :: macro (s: str) -> cstr {
     null_terminated_str := core.alloc.array_from_stack(u8, s.length + 1);
     core.memory.copy(null_terminated_str.data, s.data, s.length);
