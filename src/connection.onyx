@@ -1,0 +1,37 @@
+package postgres
+
+Connection :: struct {
+    handle: PQConn;
+}
+
+// These are probably stable from libpq-fe.h
+Connection_Status :: enum {
+    Ok                :: 0;
+    Bad               :: 1;
+    Started           :: 2;
+    Made              :: 3;
+    Awaiting_Response :: 4;
+    Auth_Ok           :: 5;
+    SetEnv            :: 6;
+    SSL_Startup       :: 7;
+    Needed            :: 8;
+    Check_Writable    :: 9;
+    Consume           :: 10;
+    GSS_Startup       :: 11;
+    Check_Target      :: 12;
+    Check_Standby     :: 13;
+}
+
+connect :: (connstr: str) -> Connection {
+    null_terminated_str := core.alloc.array_from_stack(u8, connstr.length + 1);
+    core.memory.copy(null_terminated_str.data, connstr.data, connstr.length);
+    null_terminated_str[connstr.length] = 0;
+
+    handle := PQconnectdb(null_terminated_str.data);
+    return .{handle};
+}
+
+status :: (conn: Connection) -> Connection_Status {
+    return ~~ PQstatus(conn.handle);
+}
+

@@ -1,0 +1,46 @@
+#load "core/std"
+#load "./module"
+
+use core
+use cbindgen
+
+main :: () {
+    path := module_path(#file);
+
+    c_file_path := string.concat(path, "postgres.c");
+
+    result := generate_c_binding(.{
+        output_file = c_file_path,
+        foreign_block = postgres.foreign_block,
+
+        cast_map = .[],
+        // name_map = ((name) => aprintf("glad_{}", name)),
+
+        preamble = .[
+"""
+#include <libpq-fe.h>
+"""
+        ],
+
+        custom_implementations = .[
+        ],
+    });
+
+    if !result {
+        os.exit(1);
+    }
+
+    pg_config_proc := os.process_spawn("pg_config", .["--includedir"]);
+    pg_config_reader := io.reader_make(^pg_config_proc);
+    pg_include_path := pg_config_reader->read_all() |> string.strip_whitespace();
+
+    result = compile_c_file(c_file_path, string.concat(path, "onyx_postgres"),
+        flags = "-g3",
+        includes  = .[pg_include_path],
+        libraries = .["pq"]);
+    if !result {
+        os.exit(1);
+    }
+
+    os.remove_file(c_file_path);
+}

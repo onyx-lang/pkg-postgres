@@ -1,0 +1,11 @@
+package postgres
+
+#if #defined(runtime.Generated_Foreign_Info) {
+    #load "./src/ffi"
+    foreign_block :: __foreign_block
+
+} else {
+    #library "onyx_postgres"
+    #load_all "./src"
+}
+

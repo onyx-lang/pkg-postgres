@@ -1,0 +1,18 @@
+package postgres
+
+use package core { cptr }
+
+// PQConn *
+
+#package {
+
+PQConn :: #type cptr(void)
+
+__foreign_block :: #foreign "onyx_postgres" {
+    PQlibVersion :: () -> i32 ---
+    PQconnectdb  :: (conninfo: ^u8) -> PQConn ---
+    PQstatus     :: (conn: PQConn) -> u32 ---
+}
+
+}
+
