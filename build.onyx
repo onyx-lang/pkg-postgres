@@ -13,17 +13,11 @@ main :: () {
         output_file = c_file_path,
         foreign_block = postgres.foreign_block,
 
-        cast_map = .[],
-        // name_map = ((name) => aprintf("glad_{}", name)),
-
-        preamble = .[
-"""
-#include <libpq-fe.h>
-"""
+        cast_map = .[
+            .{ cptr(void), "void *" }
         ],
 
-        custom_implementations = .[
-        ],
+        preamble = .[ "#include <libpq-fe.h>" ],
     });
 
     if !result {
@@ -35,7 +29,6 @@ main :: () {
     pg_include_path := pg_config_reader->read_all() |> string.strip_whitespace();
 
     result = compile_c_file(c_file_path, string.concat(path, "onyx_postgres"),
-        flags = "-g3",
         includes  = .[pg_include_path],
         libraries = .["pq"]);
     if !result {

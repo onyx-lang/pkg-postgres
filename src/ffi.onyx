@@ -2,16 +2,263 @@ package postgres
 
 use package core { cptr }
 
-// PQConn *
+Polling_Status :: enum {
+    Failed  :: 0;
+    Reading :: 1;
+    Writing :: 2;
+    Ok      :: 3;
+    Active  :: 4;
+}
+
+// These are probably stable from libpq-fe.h
+Connection_Status :: enum {
+    Ok                :: 0;
+    Bad               :: 1;
+    Started           :: 2;
+    Made              :: 3;
+    Awaiting_Response :: 4;
+    Auth_Ok           :: 5;
+    SetEnv            :: 6;
+    SSL_Startup       :: 7;
+    Needed            :: 8;
+    Check_Writable    :: 9;
+    Consume           :: 10;
+    GSS_Startup       :: 11;
+    Check_Target      :: 12;
+    Check_Standby     :: 13;
+}
+
+Transaction_Status :: enum {
+    Idle    :: 0;
+    Active  :: 1;
+    InTrans :: 2;
+    InError :: 3;
+    Unknown :: 4;
+}
+
+Pipeline_Status :: enum {
+
+}
+
+Verbosity :: enum {
+    Terse    :: 0;
+    Default  :: 1;
+    Verbose  :: 2;
+    SQLState :: 3;
+}
+
+Context_Visibility :: enum {
+    Never  :: 0;
+    Errors :: 1;
+    Always :: 2;
+}
+
+Notify :: struct {
+    relname: cptr(u8);
+    be_pid:  i32;
+    extra:   cptr(u8);
+    next:    cptr(Notify);
+}
+
+Ping :: enum {
+    Ok          :: 0;
+    Reject      :: 1;
+    No_Response :: 2;
+    No_Attempt  :: 3;
+}
+
+Exec_Status :: enum {
+    Empty_Query      :: 0;
+    Command_Ok       :: 1;
+    Tuples_Ok        :: 2;
+    Copy_Out         :: 3;
+    Copy_In          :: 4;
+    Bad_Response     :: 5;
+    NonFatal_Error   :: 6;
+    Fatal_error      :: 7;
+    Copy_Both        :: 8;
+    Single_Tuple     :: 9;
+    Pipeline_Sync    :: 10;
+    Pipeline_Aborted :: 11;
+}
+
 
 #package {
 
-PQConn :: #type cptr(void)
+PGconn   :: #type cptr(void)
+PGresult :: #type cptr(void)
+PGcancel :: #type cptr(void)
+
+PGconninfoOption :: struct {
+    keyword:  cptr(u8);
+    envvar:   cptr(u8);
+    compiled: cptr(u8);
+    val:      cptr(u8);
+    label:    cptr(u8);
+    dispchar: cptr(u8);
+    dispsize: i32;
+}
+
+PGresAttDesc :: struct {
+    name: cptr(u8);
+    tableid: i32;
+    columnid: i32;
+    format: i32;
+    typeid: i32;
+    typelen: i32;
+    atttypmod: i32;
+}
 
 __foreign_block :: #foreign "onyx_postgres" {
     PQlibVersion :: () -> i32 ---
-    PQconnectdb  :: (conninfo: ^u8) -> PQConn ---
-    PQstatus     :: (conn: PQConn) -> u32 ---
+
+    PQconnectStart :: (conninfo: cstr) -> PGconn ---
+    PQconnectStartParams :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> PGconn ---
+    PQconnectPoll :: (conn: PGconn) -> Polling_Status ---
+
+    PQconnectdb  :: (conninfo: cstr) -> PGconn ---
+    PQconnectdbParams :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> PGconn ---
+    PQsetdbLogin :: (pghost: cstr, pgport: cstr, pgoptions: cstr, pgtty: cstr, dbName: cstr, login: cstr, pwd: cstr) -> PGconn ---
+    PQsetdb      :: (pghost: cstr, pgport: cstr, pgoptions: cstr, pgtty: cstr, dbName: cstr) -> PGconn ---
+    PQfinish     :: (conn: PGconn) -> void ---
+
+    PQconndefaults :: () -> cptr(PGconninfoOption) ---
+
+    PQconninfoParse :: (conninfo: cstr, errmsg: ^cptr(u8)) -> cptr(PGconninfoOption) ---
+    PQconninfo      :: (conn: PGconn) -> cptr(PGconninfoOption) ---
+    PQconninfoFree  :: (connOptions: cptr(PGconninfoOption)) -> void ---
+
+    PQresetStart    :: (conn: PGconn) -> i32 ---
+    PQresetPoll     :: (conn: PGconn) -> Polling_Status ---
+
+    PQreset         :: (conn: PGconn) -> void ---
+    PQgetCancel     :: (conn: PGconn) -> PGcancel ---
+    PQfreeCancel    :: (cancel: PGcancel) -> void ---
+    PQcancel        :: (cancel: PGcancel, errbuf: cstr, errbufsize: i32) -> i32 ---
+    PQrequestCancel :: (conn: PGconn) -> i32 ---
+
+    PQdb       :: (conn: PGconn) -> cptr(u8) ---
+    PQuser     :: (conn: PGconn) -> cptr(u8) ---
+    PQpass     :: (conn: PGconn) -> cptr(u8) ---
+    PQhost     :: (conn: PGconn) -> cptr(u8) ---
+    PQhostaddr :: (conn: PGconn) -> cptr(u8) ---
+    PQport     :: (conn: PGconn) -> cptr(u8) ---
+    PQtty      :: (conn: PGconn) -> cptr(u8) ---
+    PQoptions  :: (conn: PGconn) -> cptr(u8) ---
+    PQstatus   :: (conn: PGconn) -> Connection_Status ---
+    PQtransactionStatus :: (conn: PGconn) -> Transaction_Status ---
+
+    PQparameterStatus :: (conn: PGconn, paramName: cstr) -> cptr(u8) ---
+    PQprotocolVersion :: (conn: PGconn) -> i32 ---
+    PQserverVersion   :: (conn: PGconn) -> i32 ---
+    PQerrorMessage    :: (conn: PGconn) -> cptr(u8) ---
+    PQsocket          :: (conn: PGconn) -> i32 ---
+    PQbackendPID      :: (conn: PGconn) -> i32 ---
+    PQpipelineStatus  :: (conn: PGconn) -> Pipeline_Status ---
+    PQconnectionNeedsPassword :: (conn: PGconn) -> bool ---
+    PQconnectionUsedPassword  :: (conn: PGconn) -> bool ---
+    PQclientEncoding          :: (conn: PGconn) -> i32 ---
+    PQsetClientEncoding       :: (conn: PGconn, encoding: cstr) -> i32 ---
+
+    PQsslInUse :: (conn: PGconn) -> bool ---
+    PQsslStruct :: (conn: PGconn, struct_name: cstr) -> cptr(void) ---
+    PQsslAttribute :: (conn: PGconn, attribute_name: cstr) -> cptr(u8) ---
+    PQsslAttributeNames :: (conn: PGconn) -> cptr(cptr(u8)) ---
+
+    PQgetssl  :: (conn: PGconn) -> cptr(void) ---
+    PQinitssl :: (do_init: bool) -> void ---
+    PQinitOpenSSL :: (do_ssl: bool, do_crypto: bool) -> void ---
+    PQgssEncInUse :: (conn: PGconn) -> bool ---
+    PQgetgssctx   :: (conn: PGconn) -> cptr(void) ---
+
+    PQsetErrorVerbosity :: (conn: PGconn, verbosity: Verbosity) -> Verbosity ---
+    PQsetErrorContextVisibility :: (conn: PGconn, show_context: Context_Visibility) -> Context_Visibility ---
+
+    // PQsetNoticeReceiver
+    // PQsetNoticeProcessor
+    // PQregisterThreadLock
+    // PQtrace
+    // PQuntrace
+    // PQsetTraceFlags
+
+    PQexec :: (conn: PGconn, query: cstr) -> PGresult ---
+    PQexecParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: ^i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
+    PQprepare :: (conn: PGconn, stmtName: cstr, query: cstr, nParams: i32, paramTypes: ^i32) -> PGresult ---
+    PQexecPrepared :: (conn: PGconn, stmtName: cstr, nParams: i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
+
+    PQsendQuery :: (conn: PGconn, query: cstr) -> i32 ---
+    PQsendQueryParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: ^i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
+    PQsetSingleRowMode :: (conn: PGconn) -> i32 ---
+    PQgetResult :: (conn: PGconn) -> PGresult ---
+
+    PQisBusy :: (conn: PGconn) -> bool ---
+    PQconsumeInput :: (conn: PGconn) -> i32 ---
+
+    PQenterPipelineMode :: (conn: PGconn) -> i32 ---
+    PQexitPipelineMode  :: (conn: PGconn) -> i32 ---
+    PQpipelineSync      :: (conn: PGconn) -> i32 ---
+    PQsendFlushRequest  :: (conn: PGconn) -> i32 ---
+
+    PQnotifies :: (conn: PGconn) -> cptr(Notify) ---
+
+    PQputCopyData :: (conn: PGconn, buffer: cstr, nbytes: i32) -> i32 ---
+    PQputCopyEnd  :: (conn: PGconn, errormsg: cstr) -> i32 ---
+    PQgetCopyData :: (conn: PGconn, buffer: ^cptr(u8), async: bool) -> i32 ---
+
+    PQsetnonblocking :: (conn: PGconn, arg: bool) -> bool ---
+    PQisnonblocking  :: (conn: PGconn) -> bool ---
+    PQisthreadsafe   :: () -> bool ---
+    PQping           :: (conninfo: cstr) -> Ping ---
+    PQpingParams     :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> Ping ---
+
+    PQflush :: (conn: PGconn) -> bool ---
+
+    PQresultStatus :: (res: PGresult) -> Exec_Status ---
+    PQresStatus    :: (status: Exec_Status) -> cptr(u8) ---
+    PQresultErrorMessage :: (res: PGresult) -> cptr(u8) ---
+    PQresultVerboseErrorMessage :: (res: PGresult, verbosity: Verbosity, show_context: Context_Visibility) -> cptr(u8) ---
+    PQresultErrorField :: (res: PGresult, fieldcode: i32) -> cptr(u8) ---
+
+    PQntuples :: (res: PGresult) -> i32 ---
+    PQnfields :: (res: PGresult) -> i32 ---
+    PQbinaryTuples :: (res: PGresult) -> i32 ---
+    PQfname :: (res: PGresult, field_num: i32) -> cptr(u8) ---
+    PQfnumber :: (res: PGresult, field_name: cstr) -> i32 ---
+    PQftable :: (res: PGresult, field_num: i32) -> i32 ---
+    PQftablecol :: (res: PGresult, field_num: i32) -> i32 ---
+    PQfformat :: (res: PGresult, field_num: i32) -> i32 ---
+    PQftype :: (res: PGresult, field_num: i32) -> i32 ---
+    PQfsize :: (res: PGresult, field_num: i32) -> i32 ---
+    PQfmod  :: (res: PGresult, field_num: i32) -> i32 ---
+    PQcmdStatus :: (res: PGresult) -> cptr(u8) ---
+    PQoidValue  :: (res: PGresult) -> i32 ---
+    PQcmdTuples :: (res: PGresult) -> cptr(u8) ---
+    PQgetvalue  :: (res: PGresult, tuple_num, field_num: i32) -> cptr(u8) ---
+    PQgetlength :: (res: PGresult, tuple_num, field_num: i32) -> i32 ---
+    PQgetisnull :: (res: PGresult, tuple_num, field_num: i32) -> bool ---
+    PQnparams   :: (res: PGresult) -> i32 ---
+    PQparamtype :: (res: PGresult, param_num: i32) -> i32 ---
+
+    PQdescribePrepared :: (conn: PGconn, stmt: cstr) -> PGresult ---
+    PQdescribePortal   :: (conn: PGconn, portal: cstr) -> PGresult ---
+    PQsendDescribePrepared :: (conn: PGconn, stmt: cstr) -> i32 ---
+    PQsendDescribePortal   :: (conn: PGconn, portal: cstr) -> i32 ---
+
+    PQclear :: (res: PGresult) -> void ---
+    PQfreemem :: (ptr: cptr(void)) -> void ---
+
+    PQmakeEmptyPGResult :: (conn: PGconn, status: Exec_Status) -> PGresult ---
+    PQcopyResult :: (src: PGresult, flags: i32) -> PGresult ---
+    PQsetResultAttrs :: (res: PGresult, numAttributes: i32, attDescs: ^PGresAttDesc) -> void ---
+    PQresultAlloc    :: (res: PGresult, nBytes: i32) -> cptr(void) ---
+    PQresultMemorySize :: (res: PGresult) -> i32 ---
+    PQsetvalue         :: (res: PGresult, tuple_num: i32, field_num: i32, value: cstr, len: i32) -> bool ---
+
+    PQescapeStringConn :: (conn: PGconn, to: cstr, from: cstr, len: i32, error: ^i32) -> i32 ---
+    PQescapeLiteral    :: (conn: PGconn, from: cstr, len: i32) -> cptr(u8) ---
+    PQescapeIdentifier :: (conn: PGconn, from: cstr, len: i32) -> cptr(u8) ---
+    PQescapeByteaConn  :: (conn: PGconn, from: cstr, len: i32, to_len: i32) -> cptr(u8) ---
+    PQunescapeBytea    :: (strtext: cstr, retbuflen: i32) -> cptr(u8) ---
 }
 
 }

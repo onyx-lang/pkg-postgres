@@ -1,3 +1,35 @@
 package postgres
 
 version :: PQlibVersion
+
+use core {cptr}
+
+// This should probably be in the standard library?
+cptru8_to_str :: #match #local {}
+
+#overload
+cptru8_to_str :: macro (s: cptr(u8)) -> str {
+    len := s->extract_str(.[]);
+
+    buf := core.alloc.array_from_stack(u8, len + 1);
+    s->extract_str(buf[0 .. len]);
+
+    return buf;
+}
+
+#overload
+cptru8_to_str :: (s: cptr(u8), a: Allocator) -> str {
+    len := s->extract_str(.[]);
+
+    buf := make([] u8, len, allocator=a);
+    s->extract_str(buf[0 .. len]);
+
+    return buf;
+}
+
+str_to_cstr :: macro (s: str) -> cstr {
+    null_terminated_str := core.alloc.array_from_stack(u8, s.length + 1);
+    core.memory.copy(null_terminated_str.data, s.data, s.length);
+    null_terminated_str[s.length] = 0;
+    return null_terminated_str.data;
+}

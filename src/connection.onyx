@@ -1,37 +1,146 @@
 package postgres
 
-Connection :: struct {
-    handle: PQConn;
-}
+use core {cptr, io}
 
-// These are probably stable from libpq-fe.h
-Connection_Status :: enum {
-    Ok                :: 0;
-    Bad               :: 1;
-    Started           :: 2;
-    Made              :: 3;
-    Awaiting_Response :: 4;
-    Auth_Ok           :: 5;
-    SetEnv            :: 6;
-    SSL_Startup       :: 7;
-    Needed            :: 8;
-    Check_Writable    :: 9;
-    Consume           :: 10;
-    GSS_Startup       :: 11;
-    Check_Target      :: 12;
-    Check_Standby     :: 13;
+Connection :: struct {
+    handle: PGconn;
 }
 
 connect :: (connstr: str) -> Connection {
-    null_terminated_str := core.alloc.array_from_stack(u8, connstr.length + 1);
-    core.memory.copy(null_terminated_str.data, connstr.data, connstr.length);
-    null_terminated_str[connstr.length] = 0;
-
-    handle := PQconnectdb(null_terminated_str.data);
+    handle := PQconnectdb(str_to_cstr(connstr));
     return .{handle};
 }
 
-status :: (conn: Connection) -> Connection_Status {
-    return ~~ PQstatus(conn.handle);
+#inject
+Connection.finish :: (conn: Connection) => PQfinish(conn.handle);
+
+#inject
+Connection.reset :: (conn: Connection) => PQreset(conn.handle);
+
+#inject
+Connection.db :: (conn: Connection) =>
+    PQdb(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.user :: (conn: Connection) =>
+    PQuser(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.pass :: (conn: Connection) =>
+    PQpass(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.host :: (conn: Connection) =>
+    PQhost(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.hostaddr :: (conn: Connection) =>
+    PQhostaddr(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.port :: (conn: Connection) =>
+    PQport(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.tty :: (conn: Connection) =>
+    PQtty(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.options :: (conn: Connection) =>
+    PQoptions(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.status :: (conn: Connection) => PQstatus(conn.handle);
+
+#inject
+Connection.transaction_status :: (conn: Connection) => PQtransactionStatus(conn.handle);
+
+#inject
+Connection.parameter_status :: (conn: Connection, paramName: str) =>
+    PQparameterStatus(conn.handle, str_to_cstr(paramName))
+    |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.protocol_version :: (conn: Connection) => PQprotocolVersion(conn.handle);
+
+#inject
+Connection.server_version :: (conn: Connection) => PQserverVersion(conn.handle);
+
+#inject
+Connection.errorMessage :: (conn: Connection) =>
+    PQerrorMessage(conn.handle) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Connection.socket :: (conn: Connection) => PQsocket(conn.handle);
+
+#inject
+Connection.backend_pid :: (conn: Connection) => PQbackendPID(conn.handle);
+
+#inject
+Connection.connection_needs_password :: (conn: Connection) =>
+    PQconnectionNeedsPassword(conn.handle);
+
+#inject
+Connection.connection_used_password :: (conn: Connection) =>
+    PQconnectionUsedPassword(conn.handle);
+
+#inject
+Connection.clientEncoding :: (conn: Connection) => PQclientEncoding(conn.handle);
+
+#inject
+Connection.setClientEncoding :: (conn: Connection, encoding: str) =>
+    PQsetClientEncoding(conn.handle, str_to_cstr(encoding));
+
+#inject
+Connection.ssl_in_use :: (conn: Connection) => PQsslInUse(conn.handle);
+
+#inject
+Connection.initssl :: (conn: Connection, do_ssl: bool) => PQinitssl(do_ssl);
+
+#inject
+Connection.gss_enc_in_use :: (conn: Connection) => PQgssEncInUse(conn.handle);
+
+#inject
+Connection.get_gss_ctx :: (conn: Connection) => PQgetgssctx(conn.handle);
+
+#inject
+Connection.set_error_verbosity :: (conn: Connection, verbosity: Verbosity) =>
+    PQsetErrorVerbosity(conn.handle, verbosity);
+
+#inject
+Connection.set_error_context_visibility :: (conn: Connection, show_context: Context_Visibility) =>
+    PQsetErrorContextVisibility(conn.handle, show_context);
+
+#inject
+Connection.exec :: (conn: Connection, query: str) =>
+    Result.{ PQexec(conn.handle, str_to_cstr(query)) };
+
+#inject
+Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
+    constructed_values := make([] str, params.count);
+    defer {
+        for^ constructed_values do delete(it);
+        delete(^constructed_values);
+    }
+
+    values := make([] cptr(u8), params.count);
+    defer delete(^values);
+
+    for params.length {
+        w, buf := io.string_builder();
+        defer delete(^buf);
+
+        io.write_format_va(^w, "{}", .[ params[it] ]);
+
+        constructed_values[it] = io.buffer_stream_to_str(buf);
+        values[it] = cptr.make(buf.data.data);
+    }
+
+    return Result.{
+        PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0)
+    };
 }
 
+
+#inject
+Connection.flush :: (conn: Connection) => PQflush(conn.handle);

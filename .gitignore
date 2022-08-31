@@ -4,3 +4,6 @@ postgres.c
 test.onyx
 onyx_postgrss.so
 onyx_postgres.so
+*.sublime-project
+*.sublime-workspace
+*.wasm

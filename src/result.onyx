@@ -1,0 +1,45 @@
+package postgres
+
+Result :: struct {
+    handle: PGresult;
+}
+
+#inject
+Result.status :: (res: Result) => PQresultStatus(res.handle);
+
+#inject
+Result.ntuples :: (res: Result) => PQntuples(res.handle);
+
+#inject
+Result.nfields :: (res: Result) => PQnfields(res.handle);
+
+#inject
+Result.binary_tuples :: (res: Result) => PQbinaryTuples(res.handle);
+
+#inject
+Result.fname :: (res: Result, field_num: i32) =>
+    PQfname(res.handle, field_num) |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Result.fnumber :: (res: Result, field_name: str) =>
+    PQfnumber(res.handle, str_to_cstr(field_name));
+
+#inject @Optimize
+Result.get_value :: (res: Result, tuple_num, field_num: i32) =>
+    PQgetvalue(res.handle, tuple_num, field_num)
+    |> cptru8_to_str(context.temp_allocator);
+
+#inject
+Result.get_length :: (res: Result, tuple_num, field_num: i32) =>
+    PQgetlength(res.handle, tuple_num, field_num);
+
+#inject
+Result.get_is_null :: (res: Result, tuple_num, field_num: i32) =>
+    PQgetisnull(res.handle, tuple_num, field_num);
+
+#inject
+Result.nparams :: (res: Result) => PQnparams(res.handle);
+
+#inject
+Result.clear :: (res: Result) => PQclear(res.handle);
+
