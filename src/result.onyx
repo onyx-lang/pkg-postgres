@@ -1,5 +1,9 @@
 package postgres
 
+use core {
+    runtime, alloc, conv
+}
+
 Result :: struct {
     handle: PGresult;
 }
@@ -43,3 +47,46 @@ Result.nparams :: (res: Result) => PQnparams(res.handle);
 #inject
 Result.clear :: (res: Result) => PQclear(res.handle);
 
+#inject
+Result.one_as :: macro (res: Result, $T: type_expr, string_allocator := context.allocator) -> T {
+    result_to_object :: result_to_object
+
+    t: T;
+    result_to_object(res, 0, T, ~~ ^t, string_allocator);
+    return t;
+}
+
+#inject
+Result.all_as :: macro (res: Result, $T: type_expr, string_allocator := context.allocator) -> [] T {
+    result_to_object :: result_to_object
+
+    rows := res->ntuples();
+    ret := make([] T, rows);
+
+    info := core.runtime.info.get_type_info(T);
+    if info.kind != .Struct do return .[];
+
+    for row: rows {
+        base := cast(^u8) (^ret[row]);
+        result_to_object(res, row, T, base, string_allocator);
+    }
+
+    return ret;
+}
+
+
+#local
+result_to_object :: (res: Result, row: u32, type: type_expr, data: ^u8, string_allocator := context.allocator) {
+    for col: res->nfields() {
+        @Optimize
+        member := runtime.info.get_struct_member(type, res->fname(col));
+
+        if member.type == str {
+            *cast(^str) (data + member.offset) = PQgetvalue(res.handle, row, col)
+                                                 |> cptru8_to_str(string_allocator);
+        } else {
+            conv.parse_any(data + member.offset, member.type,
+                res->get_value(row, col), string_allocator=string_allocator);
+        }
+    }
+}
