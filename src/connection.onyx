@@ -126,7 +126,7 @@ Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
     values := make([] cptr(u8), params.count);
     defer delete(^values);
 
-    for params.length {
+    for params.count {
         // The data from this buffer will be freed in the defered
         // block above, since the data element is copied and stored
         // in the constructed_values array.

@@ -12,24 +12,25 @@ cptru8_to_str :: macro (s: cptr(u8)) -> str {
     len := s->extract_str(.[]);
 
     buf := core.alloc.array_from_stack(u8, len + 1);
-    s->extract_str(buf[0 .. len]);
+    s->extract_str(buf[0 .. len + 1]);
+    buf[len] = 0;
 
-    return buf;
+    return buf[0 .. len];
 }
 
 #overload
 cptru8_to_str :: (s: cptr(u8), a: Allocator) -> str {
     len := s->extract_str(.[]);
 
-    buf := make([] u8, len, allocator=a);
-    s->extract_str(buf[0 .. len]);
+    buf := make([] u8, len + 1, allocator=a);
+    s->extract_str(buf[0 .. len + 1]);
+    buf[len] = 0;
 
-    return buf;
+    return buf[0 .. len];
 }
 
-// This returns a volatile string
-// that should not be returned by any function.
-// It is only valid so long as the callers frame
+// This returns a volatile string that should not be returned
+// by any function. It is only valid so long as the callers frame
 // is valid.
 str_to_cstr :: macro (s: str) -> cstr {
     null_terminated_str := core.alloc.array_from_stack(u8, s.length + 1);

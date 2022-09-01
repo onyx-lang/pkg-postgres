@@ -45,6 +45,10 @@ Result.get_is_null :: (res: Result, tuple_num, field_num: i32) =>
 Result.nparams :: (res: Result) => PQnparams(res.handle);
 
 #inject
+Result.paramtype :: (res: Result, param_num: i32) =>
+    PQparamtype(res.handle, param_num);
+
+#inject
 Result.clear :: (res: Result) => PQclear(res.handle);
 
 #inject
