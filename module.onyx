@@ -1,5 +1,15 @@
 package postgres
 
+//
+// This package makes extensive use of the temporary allocator
+// on the context object. If you are using the default temporary
+// allocator (you probably are), you need to clear the temporary
+// allocator every so often using core.alloc.clear_temp_allocator().
+// A good place to do this would be between web request handling,
+// or between frames of a game.
+//
+
+
 #if #defined(runtime.Generated_Foreign_Info) {
     #load "./src/ffi"
     foreign_block :: __foreign_block

@@ -29,9 +29,26 @@ cptru8_to_str :: (s: cptr(u8), a: Allocator) -> str {
     return buf[0 .. len];
 }
 
+@CompilerBug
+// This function demonstrated a fun compiler bug, that I'm not
+// sure how easy it is to solve... Basically, when calling a
+// function that uses compound arguments / return value, the
+// stack pointer must be modified to reserve space for the values,
+// then restored when the function call ends. However, if during
+// argument placing the stack pointer changes, undefined behavior
+// can occur. I would like to not leave this as undefined behavior,
+// but I don't know how I can easily tell if you can the stack pointer
+// within the arguments during a function call... Just to have an
+// example of what I mean.
+//
+//     res := foo(str_to_cstr("wow"), Some_Struct.{});
+//     value of res is undefined, because __stack_top was changed
+//     in str_to_cstr.
+//
 // This returns a volatile string that should not be returned
 // by any function. It is only valid so long as the callers frame
 // is valid.
+//
 str_to_cstr :: macro (s: str) -> cstr {
     null_terminated_str := core.alloc.array_from_stack(u8, s.length + 1);
     core.memory.copy(null_terminated_str.data, s.data, s.length);

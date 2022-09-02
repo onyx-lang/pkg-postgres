@@ -112,8 +112,10 @@ Connection.set_error_context_visibility :: (conn: Connection, show_context: Cont
     PQsetErrorContextVisibility(conn.handle, show_context);
 
 #inject
-Connection.exec :: (conn: Connection, query: str) =>
-    Result.{ PQexec(conn.handle, str_to_cstr(query)) };
+Connection.exec :: (conn: Connection, query: str) => {
+    handle := PQexec(conn.handle, str_to_cstr(query));
+    return Result.make(handle);
+}
 
 #inject
 Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
@@ -138,9 +140,8 @@ Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
         values[it] = cptr.make(constructed_values[it].data);
     }
 
-    return Result.{
-        PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0)
-    };
+    handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0);
+    return Result.make(handle);
 }
 
 
