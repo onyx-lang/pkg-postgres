@@ -12,6 +12,7 @@ Result :: struct {
     // The strings in this array are allocated in the temporary allocator.
     // The array itself is stored in the heap.
     col_names: [] str;
+    rows: u32;
 }
 
 #inject
@@ -27,6 +28,8 @@ Result.make :: (handle: PGresult, async := false) -> Result {
         for i: res.col_names.count {
             res.col_names[i] = res->fname(i);
         }
+
+        res.rows = res->ntuples();
     }
 
     return res;
@@ -91,13 +94,12 @@ Result.one_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
 Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context.allocator) -> [] T {
     result_to_struct :: result_to_struct
 
-    rows := res->ntuples();
-    ret := make([] T, rows);
+    ret := make([] T, res.rows);
 
     info := core.runtime.info.get_type_info(T);
     if info.kind != .Struct do return .[];
 
-    for row: rows {
+    for row: res.rows {
         base := cast(^u8) (^ret[row]);
         result_to_struct(res, row, T, base, string_allocator);
     }
@@ -108,6 +110,8 @@ Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
 
 #local
 result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: ^u8, string_allocator := context.allocator) {
+    if row >= res.rows do return;
+
     for col: res->nfields() {
         member := runtime.info.get_struct_member(type, res.col_names[col]);
 

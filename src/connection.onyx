@@ -134,7 +134,7 @@ Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
         // in the constructed_values array.
         buf := io.buffer_stream_make(64);
         w := io.writer_make(^buf);
-        io.write_format_va(^w, "{}", .[ params[it] ]);
+        io.write_format_va(^w, "{d}", .[ params[it] ]);
 
         constructed_values[it] = io.buffer_stream_to_str(^buf);
         values[it] = cptr.make(constructed_values[it].data);

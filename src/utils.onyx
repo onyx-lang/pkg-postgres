@@ -29,6 +29,18 @@ cptru8_to_str :: (s: cptr(u8), a: Allocator) -> str {
     return buf[0 .. len];
 }
 
+#overload
+cptru8_to_str :: (s: cptr(u8), out: [] u8) -> str {
+    len := s->extract_str(.[]);
+
+    if len >= out.length - 1 do len = out.length - 1;
+
+    s->extract_str(out[0 .. len]);
+    out[len] = 0;
+
+    return out[0 .. len];
+}
+
 @CompilerBug
 // This function demonstrated a fun compiler bug, that I'm not
 // sure how easy it is to solve... Basically, when calling a
@@ -54,4 +66,10 @@ str_to_cstr :: macro (s: str) -> cstr {
     core.memory.copy(null_terminated_str.data, s.data, s.length);
     null_terminated_str[s.length] = 0;
     return null_terminated_str.data;
+}
+
+escape_str :: (conn: PGconn, s: str, allocator := context.allocator) -> str {
+    n := make([] u8, s.length * 2 + 1, allocator=allocator);
+    len := PGescapeStringConn(conn, n.data, s.data, s.length, null);
+    return n[0 .. len];
 }
