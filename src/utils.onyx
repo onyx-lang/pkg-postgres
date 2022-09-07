@@ -68,8 +68,8 @@ str_to_cstr :: macro (s: str) -> cstr {
     return null_terminated_str.data;
 }
 
-escape_str :: (conn: PGconn, s: str, allocator := context.allocator) -> str {
+escape_str :: (conn: Connection, s: str, allocator := context.allocator) -> str {
     n := make([] u8, s.length * 2 + 1, allocator=allocator);
-    len := PGescapeStringConn(conn, n.data, s.data, s.length, null);
+    len := PQescapeStringConn(conn.handle, n.data, s.data, s.length, null);
     return n[0 .. len];
 }
