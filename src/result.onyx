@@ -55,7 +55,7 @@ Result.fname :: (res: ^Result, field_num: i32) =>
 Result.fnumber :: (res: ^Result, field_name: str) =>
     PQfnumber(res.handle, str_to_cstr(field_name));
 
-#inject @Optimize
+#inject // @Optimize
 Result.get_value :: (res: ^Result, tuple_num, field_num: i32) =>
     PQgetvalue(res.handle, tuple_num, field_num)
     |> cptru8_to_str(context.temp_allocator);

@@ -41,7 +41,7 @@ cptru8_to_str :: (s: cptr(u8), out: [] u8) -> str {
     return out[0 .. len];
 }
 
-@CompilerBug
+// // @CompilerBug
 // This function demonstrated a fun compiler bug, that I'm not
 // sure how easy it is to solve... Basically, when calling a
 // function that uses compound arguments / return value, the
