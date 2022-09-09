@@ -12,6 +12,7 @@ Result :: struct {
     // The strings in this array are allocated in the temporary allocator.
     // The array itself is stored in the heap.
     col_names: [] str;
+    col_nums:  [] i32;
     rows: u32;
 }
 
@@ -24,9 +25,11 @@ Result.make :: (handle: PGresult, async := false) -> Result {
     }
 
     if res.valid {
-        res.col_names = make([] str, res->nfields());
+        res.col_names = make([] str, res->nfields(), allocator=context.temp_allocator);
+        res.col_nums  = make([] i32, res->nfields(), allocator=context.temp_allocator);
         for i: res.col_names.count {
             res.col_names[i] = res->fname(i);
+            res.col_nums[i]  = res->ftablecol(i);
         }
 
         res.rows = res->ntuples();
@@ -55,14 +58,24 @@ Result.fname :: (res: ^Result, field_num: i32) =>
 Result.fnumber :: (res: ^Result, field_name: str) =>
     PQfnumber(res.handle, str_to_cstr(field_name));
 
+#inject
+Result.ftablecol :: (res: ^Result, field_num: i32) =>
+    PQftablecol(res.handle, field_num);
+
 #inject // @Optimize
 Result.get_value :: (res: ^Result, tuple_num, field_num: i32) =>
     PQgetvalue(res.handle, tuple_num, field_num)
     |> cptru8_to_str(context.temp_allocator);
 
 #inject
+Result.get_value_into :: (res: ^Result, tuple_num, field_num: i32, buffer: [] u8) => {
+    return PQgetvalue(res.handle, tuple_num, field_num)
+           |> cptru8_to_str(buffer);
+}
+
+#inject
 Result.get_length :: (res: ^Result, tuple_num, field_num: i32) =>
-    PQgetlength(res.handle, tuple_num, field_num);
+    PQgetlength(res.handle, tuple_num, field_num) + 1;
 
 #inject
 Result.get_is_null :: (res: ^Result, tuple_num, field_num: i32) =>
@@ -80,6 +93,11 @@ Result.clear :: (res: ^Result) {
     delete(^res.col_names);
     PQclear(res.handle);
 }
+
+#inject
+Result.error_message :: (res: ^Result) =>
+    PQresultErrorMessage(res.handle)
+    |> cptru8_to_str(context.temp_allocator);
 
 #inject
 Result.one_as :: macro (res: ^Result, $T: type_expr, string_allocator := context.allocator) -> T {
@@ -108,7 +126,6 @@ Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
 }
 
 
-#local
 result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: ^u8, string_allocator := context.allocator) {
     if row >= res.rows do return;
 
