@@ -89,10 +89,7 @@ Result.paramtype :: (res: ^Result, param_num: i32) =>
     PQparamtype(res.handle, param_num);
 
 #inject
-Result.clear :: (res: ^Result) {
-    delete(^res.col_names);
-    PQclear(res.handle);
-}
+Result.clear :: (res: ^Result) => PQclear(res.handle);
 
 #inject
 Result.error_message :: (res: ^Result) =>
