@@ -115,7 +115,7 @@ Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
     if info.kind != .Struct do return .[];
 
     for row: res.rows {
-        base := cast(^u8) (^ret[row]);
+        base := cast([^] u8) (^ret[row]);
         result_to_struct(res, row, T, base, string_allocator);
     }
 
@@ -123,7 +123,7 @@ Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
 }
 
 
-result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: ^u8, string_allocator := context.allocator) {
+result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: [^] u8, string_allocator := context.allocator) {
     if row >= res.rows do return;
 
     for col: res->nfields() {
