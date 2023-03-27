@@ -1,5 +1,7 @@
 package postgres
 
+use runtime
+
 //
 // This package makes extensive use of the temporary allocator
 // on the context object. If you are using the default temporary

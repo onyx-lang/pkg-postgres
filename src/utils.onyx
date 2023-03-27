@@ -2,13 +2,14 @@ package postgres
 
 version :: PQlibVersion
 
-use core {cptr}
+use core {package, cptr}
 
 // This should probably be in the standard library?
 cptru8_to_str :: #match #local {}
 
 #overload
 cptru8_to_str :: macro (s: cptr(u8)) -> str {
+    use core
     len := s->extract_str(.[]);
 
     buf := core.alloc.array_from_stack(u8, len + 1);
@@ -62,6 +63,8 @@ cptru8_to_str :: (s: cptr(u8), out: [] u8) -> str {
 // is valid.
 //
 str_to_cstr :: macro (s: str) -> cstr {
+    use core
+
     null_terminated_str := core.alloc.array_from_stack(u8, s.length + 1);
     core.memory.copy(null_terminated_str.data, s.data, s.length);
     null_terminated_str[s.length] = 0;

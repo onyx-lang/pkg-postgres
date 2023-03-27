@@ -1,8 +1,8 @@
 package postgres
 
-use core {
-    runtime, alloc, conv
-}
+use runtime
+use core
+use core { alloc, conv }
 
 Result :: struct {
     handle: PGresult;
@@ -108,10 +108,11 @@ Result.one_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
 #inject
 Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context.allocator) -> [] T {
     result_to_struct :: result_to_struct
+    use runtime
 
     ret := make([] T, res.rows);
 
-    info := core.runtime.info.get_type_info(T);
+    info := runtime.info.get_type_info(T);
     if info.kind != .Struct do return .[];
 
     for row: res.rows {

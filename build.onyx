@@ -1,8 +1,9 @@
 #load "core/std"
 #load "./module"
 
-use core
-use cbindgen
+use core {package, *}
+use cbindgen {*}
+use postgres
 
 main :: () {
     path := module_path(#file);

@@ -1,6 +1,6 @@
 package postgres
 
-use package core { cptr }
+use core { cptr }
 
 Polling_Status :: enum {
     Failed  :: 0;
