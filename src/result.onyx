@@ -130,6 +130,12 @@ result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: [^] u8, stri
     for col: res->nfields() {
         member := runtime.info.get_struct_member(type, res.col_names[col]);
 
+        if res->get_is_null(row, col) {
+            // 0-bytes represent empty, falsey value
+            core.memory.set(data + member.offset, 0, runtime.info.size_of(member.type));
+            continue;
+        }
+
         if member.type == str {
             *cast(^str) (data + member.offset) = PQgetvalue(res.handle, row, col)
                                                  |> cptru8_to_str(string_allocator);
