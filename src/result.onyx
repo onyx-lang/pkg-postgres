@@ -129,6 +129,7 @@ result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: [^] u8, stri
 
     for col: res->nfields() {
         member := runtime.info.get_struct_member(type, res.col_names[col]);
+        if !member do continue;
 
         if res->get_is_null(row, col) {
             // 0-bytes represent empty, falsey value
