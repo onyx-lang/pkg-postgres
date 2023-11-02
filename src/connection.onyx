@@ -1,6 +1,6 @@
 package postgres
 
-use core {cptr, io}
+use core {cptr, io, conv}
 
 Connection :: struct {
     handle: PGconn;
@@ -121,11 +121,6 @@ Connection.exec :: (conn: Connection, query: str) => {
 Connection.execParams :: #match #local {}
 
 #overload
-Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
-    return conn->execParams(command, cast([] any) params);
-}
-
-#overload
 Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
     constructed_values := make([] str, params.count);
     defer {
@@ -141,17 +136,19 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
         // The data from this buffer will be freed in the defered
         // block above, since the data element is copied and stored
         // in the constructed_values array.
-        buf := io.buffer_stream_make(64);
-        w := io.writer_make(^buf);
-        io.write_format_va(^w, "{d}", .[ params[it] ]);
+        constructed_values[it] = conv.format_va("{d}", .[ params[it] ]);
 
-        constructed_values[it] = io.buffer_stream_to_str(^buf);
         values[it] = cptr.make(constructed_values[it].data);
         value_lengths[it] = constructed_values[it].length;
     }
 
     handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, value_lengths.data, null, 0);
     return Result.make(handle);
+}
+
+#overload
+Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
+    return conn->execParams(command, cast([] any) params);
 }
 
 
