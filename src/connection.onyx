@@ -118,14 +118,23 @@ Connection.exec :: (conn: Connection, query: str) => {
 }
 
 #inject
+Connection.execParams :: #match #local {}
+
+#overload
 Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
+    return conn->execParams(command, cast([] any) params);
+}
+
+#overload
+Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
     constructed_values := make([] str, params.count);
     defer {
         for^ constructed_values do delete(it);
         delete(^constructed_values);
     }
 
-    values := make([] cptr(u8), params.count);
+    values        := make([] cptr(u8), params.count);
+    value_lengths := make([] i32, params.count);
     defer delete(^values);
 
     for params.count {
@@ -138,9 +147,10 @@ Connection.execParams :: (conn: Connection, command: str, params: ..any) => {
 
         constructed_values[it] = io.buffer_stream_to_str(^buf);
         values[it] = cptr.make(constructed_values[it].data);
+        value_lengths[it] = constructed_values[it].length;
     }
 
-    handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0);
+    handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, value_lengths.data, null, 0);
     return Result.make(handle);
 }
 
