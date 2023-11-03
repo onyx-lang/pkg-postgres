@@ -130,20 +130,16 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
         delete(^constructed_values);
     }
 
-    values        := make([] cptr(u8), params.count);
-    value_lengths := make([] i32, params.count);
+    values := make([] cptr(u8), params.count);
     defer delete(^values);
 
     for params.count {
-        defer {
-            values[it] = cptr.make(constructed_values[it].data);
-            value_lengths[it] = constructed_values[it].length;
-        }
+        defer values[it] = cptr.make(constructed_values[it].data);
 
         v := params[it];
         if info.union_constructed_from(v.type, Optional) {
             if cast(&Optional(void), v.data).tag == .None {
-                constructed_values[it] = string.alloc_copy("null");
+                constructed_values[it] = string.alloc_copy(.{ #cstr "null", 5 });
                 continue;
             }
 
@@ -153,10 +149,13 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
         // The data from this buffer will be freed in the defered
         // block above, since the data element is copied and stored
         // in the constructed_values array.
-        constructed_values[it] = conv.format_va("{d}", .[ v ]);
+        constructed_values[it] = conv.format_va(
+            .{ #cstr "{d}", 4 },
+            .[ v ]
+        );
     }
 
-    handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, value_lengths.data, null, 0);
+    handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0);
     return Result.make(handle);
 }
 
