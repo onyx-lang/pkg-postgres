@@ -1,6 +1,6 @@
 package postgres
 
-use core {cptr, io, conv}
+use core {cptr, io, conv, string, misc}
 
 Connection :: struct {
     handle: PGconn;
@@ -122,6 +122,8 @@ Connection.execParams :: #match #local {}
 
 #overload
 Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
+    use runtime.info
+
     constructed_values := make([] str, params.count);
     defer {
         for^ constructed_values do delete(it);
@@ -133,13 +135,25 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
     defer delete(^values);
 
     for params.count {
+        defer {
+            values[it] = cptr.make(constructed_values[it].data);
+            value_lengths[it] = constructed_values[it].length;
+        }
+
+        v := params[it];
+        if info.union_constructed_from(v.type, Optional) {
+            if cast(&Optional(void), v.data).tag == .None {
+                constructed_values[it] = string.alloc_copy("null");
+                continue;
+            }
+
+            v = misc.any_unwrap(v);
+        }
+
         // The data from this buffer will be freed in the defered
         // block above, since the data element is copied and stored
         // in the constructed_values array.
-        constructed_values[it] = conv.format_va("{d}", .[ params[it] ]);
-
-        values[it] = cptr.make(constructed_values[it].data);
-        value_lengths[it] = constructed_values[it].length;
+        constructed_values[it] = conv.format_va("{d}", .[ v ]);
     }
 
     handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, value_lengths.data, null, 0);
