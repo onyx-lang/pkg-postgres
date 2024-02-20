@@ -27,7 +27,7 @@ Result.make :: (handle: PGresult, async := false) -> Result {
     if res.valid {
         res.col_names = make([] str, res->nfields(), allocator=context.temp_allocator);
         res.col_nums  = make([] i32, res->nfields(), allocator=context.temp_allocator);
-        for i: res.col_names.count {
+        for i in res.col_names.count {
             res.col_names[i] = res->fname(i);
             res.col_nums[i]  = res->ftablecol(i);
         }
@@ -115,7 +115,7 @@ Result.all_as :: macro (res: ^Result, $T: type_expr, string_allocator := context
     info := runtime.info.get_type_info(T);
     if info.kind != .Struct do return .[];
 
-    for row: res.rows {
+    for row in res.rows {
         base := cast([^] u8) (^ret[row]);
         result_to_struct(res, row, T, base, string_allocator);
     }
@@ -131,13 +131,13 @@ MapColumn :: struct {
 result_to_struct :: (res: ^Result, row: u32, type: type_expr, data: [^] u8, string_allocator := context.allocator) {
     if row >= res.rows do return;
 
-    for col: res->nfields() {
+    for col in res->nfields() {
         member := runtime.info.get_struct_member(type, res.col_names[col]);
         if !member {
             if type->info().kind != .Struct do continue;
 
             // Should cache this operation...
-            for &m: type->info()->as_struct().members {
+            for &m in type->info()->as_struct().members {
                 slice.find_opt(m.tags, [t](t.type == MapColumn))->with([tag] {
                     mc := core.misc.any_as(tag, MapColumn);
                     if mc.name == res.col_names[col] {
