@@ -134,12 +134,10 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
     defer delete(^values);
 
     for params.count {
-        defer values[it] = cptr.make(constructed_values[it].data);
-
         v := params[it];
         if info.union_constructed_from(v.type, Optional) {
             if cast(&Optional(void), v.data).tag == .None {
-                constructed_values[it] = string.alloc_copy(.{ #cstr "null", 5 });
+                values[it] = cptr.make(cast(&u8) null);
                 continue;
             }
 
@@ -153,6 +151,8 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
             .{ #cstr "{d}", 4 },
             .[ v ]
         );
+
+        values[it] = cptr.make(constructed_values[it].data);
     }
 
     handle := PQexecParams(conn.handle, str_to_cstr(command), params.count, null, values.data, null, null, 0);
