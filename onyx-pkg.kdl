@@ -3,7 +3,7 @@ package {
     author "Brendan Hansen" 
     url "git://onyxlang.io/repo/postgres" 
     description "A PostgresQL client for Onyx using libpq." 
-    version "0.0.20" 
+    version "0.0.21" 
 }
 
 config {
@@ -13,6 +13,6 @@ config {
 
 native {
     library "onyx_postgres" 
-    build "onyx run --generate-foreign-info build"
+    build "onyx run --generate-foreign-info build" 
 }
 
