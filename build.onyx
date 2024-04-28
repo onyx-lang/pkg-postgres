@@ -24,13 +24,24 @@ main :: () {
         os.exit(1);
     }
 
-    pg_config_proc := os.process_spawn("pg_config", .["--includedir"]);
-    pg_config_reader := io.reader_make(^pg_config_proc);
-    pg_include_path := pg_config_reader->read_all() |> string.strip_whitespace();
+    run_pg_config :: (option: str) -> str {
+        pg_config_proc := os.process_spawn("pg_config", .[option])
+        defer os.process_destroy(&pg_config_proc)
+
+        pg_config_reader := io.reader_make(&pg_config_proc)
+        pg_value := pg_config_reader->read_all()
+            |> string.strip_whitespace()
+
+        return pg_value
+    }
+
+    include_dir := run_pg_config("--pkgincludedir")
+    lib_dir     := run_pg_config("--libdir")
 
     result = compile_c_file(c_file_path, string.concat(path, "onyx_postgres"),
-        includes  = .[pg_include_path],
-        libraries = .["pq"]);
+        includes  = .[include_dir],
+        libraries = .["pq"],
+        flags     = tprintf("-L{} -Wno-int-conversion", lib_dir));
     if !result {
         os.exit(1);
     }

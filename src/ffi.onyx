@@ -166,7 +166,7 @@ __foreign_block :: #foreign "onyx_postgres" {
     PQsslAttributeNames :: (conn: PGconn) -> cptr(cptr(u8)) ---
 
     PQgetssl  :: (conn: PGconn) -> cptr(void) ---
-    PQinitssl :: (do_init: bool) -> void ---
+    // PQinitssl :: (do_init: bool) -> void ---
     PQinitOpenSSL :: (do_ssl: bool, do_crypto: bool) -> void ---
     PQgssEncInUse :: (conn: PGconn) -> bool ---
     PQgetgssctx   :: (conn: PGconn) -> cptr(void) ---
@@ -247,7 +247,7 @@ __foreign_block :: #foreign "onyx_postgres" {
     PQclear :: (res: PGresult) -> void ---
     PQfreemem :: (ptr: cptr(void)) -> void ---
 
-    PQmakeEmptyPGResult :: (conn: PGconn, status: Exec_Status) -> PGresult ---
+    PQmakeEmptyPGresult :: (conn: PGconn, status: Exec_Status) -> PGresult ---
     PQcopyResult :: (src: PGresult, flags: i32) -> PGresult ---
     PQsetResultAttrs :: (res: PGresult, numAttributes: i32, attDescs: ^PGresAttDesc) -> void ---
     PQresultAlloc    :: (res: PGresult, nBytes: i32) -> cptr(void) ---

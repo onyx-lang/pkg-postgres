@@ -94,8 +94,8 @@ Connection.setClientEncoding :: (conn: Connection, encoding: str) =>
 #inject
 Connection.ssl_in_use :: (conn: Connection) => PQsslInUse(conn.handle);
 
-#inject
-Connection.initssl :: (conn: Connection, do_ssl: bool) => PQinitssl(do_ssl);
+// #inject
+// Connection.initssl :: (conn: Connection, do_ssl: bool) => PQinitssl(do_ssl);
 
 #inject
 Connection.gss_enc_in_use :: (conn: Connection) => PQgssEncInUse(conn.handle);
