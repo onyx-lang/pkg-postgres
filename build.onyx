@@ -35,7 +35,7 @@ main :: () {
         return pg_value
     }
 
-    include_dir := run_pg_config("--pkgincludedir")
+    include_dir := run_pg_config("--includedir")
     lib_dir     := run_pg_config("--libdir")
 
     result = compile_c_file(c_file_path, string.concat(path, "onyx_postgres"),
