@@ -2,7 +2,7 @@ package postgres
 
 use runtime
 use core
-use core { alloc, conv, slice }
+use core { alloc, conv }
 
 Result :: struct {
     handle: PGresult;
@@ -138,7 +138,7 @@ result_to_struct :: (res: &Result, row: u32, type: type_expr, data: [&] u8, stri
 
             // Should cache this operation...
             for &m in type->info()->as_struct().members {
-                slice.find_opt(m.tags, [t](t.type == MapColumn))->with([tag] {
+                Slice.find_opt(m.tags, [t](t.type == MapColumn))->with([tag] {
                     mc := core.misc.any_as(tag, MapColumn);
                     if mc.name == res.col_names[col] {
                         member = m;
