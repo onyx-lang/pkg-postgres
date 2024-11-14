@@ -7,7 +7,7 @@ use postgres
 main :: () {
     path := module_path(#file);
 
-    c_file_path := string.concat(path, "postgres.c");
+    c_file_path := str.concat(path, "postgres.c");
 
     result := generate_c_binding(.{
         output_file = c_file_path,
@@ -30,7 +30,7 @@ main :: () {
 
         pg_config_reader := io.reader_make(&pg_config_proc)
         pg_value := pg_config_reader->read_all()
-            |> string.strip_whitespace()
+            |> str.strip_whitespace()
 
         return pg_value
     }
@@ -38,7 +38,7 @@ main :: () {
     include_dir := run_pg_config("--includedir")
     lib_dir     := run_pg_config("--libdir")
 
-    result = compile_c_file(c_file_path, string.concat(path, "onyx_postgres"),
+    result = compile_c_file(c_file_path, str.concat(path, "onyx_postgres"),
         includes  = .[include_dir],
         libraries = .["pq"],
         flags     = tprintf("-L{} -Wno-int-conversion", lib_dir));

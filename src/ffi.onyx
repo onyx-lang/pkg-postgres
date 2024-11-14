@@ -113,18 +113,18 @@ __foreign_block :: #foreign "onyx_postgres" {
     PQlibVersion :: () -> i32 ---
 
     PQconnectStart :: (conninfo: cstr) -> PGconn ---
-    PQconnectStartParams :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> PGconn ---
+    PQconnectStartParams :: (keywords: &cptr(u8), values: &cptr(u8), expand_dbname: bool) -> PGconn ---
     PQconnectPoll :: (conn: PGconn) -> Polling_Status ---
 
     PQconnectdb  :: (conninfo: cstr) -> PGconn ---
-    PQconnectdbParams :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> PGconn ---
+    PQconnectdbParams :: (keywords: &cptr(u8), values: &cptr(u8), expand_dbname: bool) -> PGconn ---
     PQsetdbLogin :: (pghost: cstr, pgport: cstr, pgoptions: cstr, pgtty: cstr, dbName: cstr, login: cstr, pwd: cstr) -> PGconn ---
     PQsetdb      :: (pghost: cstr, pgport: cstr, pgoptions: cstr, pgtty: cstr, dbName: cstr) -> PGconn ---
     PQfinish     :: (conn: PGconn) -> void ---
 
     PQconndefaults :: () -> cptr(PGconninfoOption) ---
 
-    PQconninfoParse :: (conninfo: cstr, errmsg: ^cptr(u8)) -> cptr(PGconninfoOption) ---
+    PQconninfoParse :: (conninfo: cstr, errmsg: &cptr(u8)) -> cptr(PGconninfoOption) ---
     PQconninfo      :: (conn: PGconn) -> cptr(PGconninfoOption) ---
     PQconninfoFree  :: (connOptions: cptr(PGconninfoOption)) -> void ---
 
@@ -182,12 +182,12 @@ __foreign_block :: #foreign "onyx_postgres" {
     // PQsetTraceFlags
 
     PQexec :: (conn: PGconn, query: cstr) -> PGresult ---
-    PQexecParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: ^i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
-    PQprepare :: (conn: PGconn, stmtName: cstr, query: cstr, nParams: i32, paramTypes: ^i32) -> PGresult ---
-    PQexecPrepared :: (conn: PGconn, stmtName: cstr, nParams: i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
+    PQexecParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: &i32, paramValues: &cptr(u8), paramLengths: &i32, paramFormats: &i32, resultFormat: i32) -> PGresult ---
+    PQprepare :: (conn: PGconn, stmtName: cstr, query: cstr, nParams: i32, paramTypes: &i32) -> PGresult ---
+    PQexecPrepared :: (conn: PGconn, stmtName: cstr, nParams: i32, paramValues: &cptr(u8), paramLengths: &i32, paramFormats: &i32, resultFormat: i32) -> PGresult ---
 
     PQsendQuery :: (conn: PGconn, query: cstr) -> i32 ---
-    PQsendQueryParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: ^i32, paramValues: ^cptr(u8), paramLengths: ^i32, paramFormats: ^i32, resultFormat: i32) -> PGresult ---
+    PQsendQueryParams :: (conn: PGconn, command: cstr, nParams: i32, paramTypes: &i32, paramValues: &cptr(u8), paramLengths: &i32, paramFormats: &i32, resultFormat: i32) -> PGresult ---
     PQsetSingleRowMode :: (conn: PGconn) -> i32 ---
     PQgetResult :: (conn: PGconn) -> PGresult ---
 
@@ -203,13 +203,13 @@ __foreign_block :: #foreign "onyx_postgres" {
 
     PQputCopyData :: (conn: PGconn, buffer: cstr, nbytes: i32) -> i32 ---
     PQputCopyEnd  :: (conn: PGconn, errormsg: cstr) -> i32 ---
-    PQgetCopyData :: (conn: PGconn, buffer: ^cptr(u8), async: bool) -> i32 ---
+    PQgetCopyData :: (conn: PGconn, buffer: &cptr(u8), async: bool) -> i32 ---
 
     PQsetnonblocking :: (conn: PGconn, arg: bool) -> bool ---
     PQisnonblocking  :: (conn: PGconn) -> bool ---
     PQisthreadsafe   :: () -> bool ---
     PQping           :: (conninfo: cstr) -> Ping ---
-    PQpingParams     :: (keywords: ^cptr(u8), values: ^cptr(u8), expand_dbname: bool) -> Ping ---
+    PQpingParams     :: (keywords: &cptr(u8), values: &cptr(u8), expand_dbname: bool) -> Ping ---
 
     PQflush :: (conn: PGconn) -> bool ---
 
@@ -249,12 +249,12 @@ __foreign_block :: #foreign "onyx_postgres" {
 
     PQmakeEmptyPGresult :: (conn: PGconn, status: Exec_Status) -> PGresult ---
     PQcopyResult :: (src: PGresult, flags: i32) -> PGresult ---
-    PQsetResultAttrs :: (res: PGresult, numAttributes: i32, attDescs: ^PGresAttDesc) -> void ---
+    PQsetResultAttrs :: (res: PGresult, numAttributes: i32, attDescs: &PGresAttDesc) -> void ---
     PQresultAlloc    :: (res: PGresult, nBytes: i32) -> cptr(void) ---
     PQresultMemorySize :: (res: PGresult) -> i32 ---
     PQsetvalue         :: (res: PGresult, tuple_num: i32, field_num: i32, value: cstr, len: i32) -> bool ---
 
-    PQescapeStringConn :: (conn: PGconn, to: cstr, from: cstr, len: i32, error: ^i32) -> i32 ---
+    PQescapeStringConn :: (conn: PGconn, to: cstr, from: cstr, len: i32, error: &i32) -> i32 ---
     PQescapeLiteral    :: (conn: PGconn, from: cstr, len: i32) -> cptr(u8) ---
     PQescapeIdentifier :: (conn: PGconn, from: cstr, len: i32) -> cptr(u8) ---
     PQescapeByteaConn  :: (conn: PGconn, from: cstr, len: i32, to_len: i32) -> cptr(u8) ---

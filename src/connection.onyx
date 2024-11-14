@@ -126,12 +126,12 @@ Connection.execParams :: (conn: Connection, command: str, params: [] any) => {
 
     constructed_values := make([] str, params.count);
     defer {
-        for^ constructed_values do delete(it);
-        delete(^constructed_values);
+        for& constructed_values do delete(it);
+        delete(&constructed_values);
     }
 
     values := make([] cptr(u8), params.count);
-    defer delete(^values);
+    defer delete(&values);
 
     for params.count {
         v := params[it];
