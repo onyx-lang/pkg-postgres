@@ -18,6 +18,6 @@ use runtime
 
 } else {
     #library "onyx_postgres"
-    #load_all "./src"
+    #load "./src"
 }
 

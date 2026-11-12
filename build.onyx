@@ -25,10 +25,10 @@ main :: () {
     }
 
     run_pg_config :: (option: str) -> str {
-        pg_config_proc := os.process_spawn("pg_config", .[option])
-        defer os.process_destroy(&pg_config_proc)
+        pg_config_proc := os.Process.spawn("pg_config", .[option])
+        defer os.Process.destroy(&pg_config_proc)
 
-        pg_config_reader := io.reader_make(&pg_config_proc)
+        pg_config_reader := io.Reader.make(&pg_config_proc)
         pg_value := pg_config_reader->read_all()
             |> str.strip_whitespace()
 

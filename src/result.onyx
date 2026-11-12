@@ -138,13 +138,13 @@ result_to_struct :: (res: &Result, row: u32, type: type_expr, data: [&] u8, stri
 
             // Should cache this operation...
             for &m in type->info()->as_struct().members {
-                Slice.find_opt(m.tags, [t](t.type == MapColumn))->with([tag] {
+                if Slice.find_opt(m.tags, [t](t.type == MapColumn)) as tag {
                     mc := core.misc.any_as(tag, MapColumn);
                     if mc.name == res.col_names[col] {
                         member = m;
                         break break;
                     }
-                });
+                }
             }
 
             if !member do continue;
